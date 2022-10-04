@@ -37,6 +37,7 @@
 #include <asm/cacheflush.h>
 #include <asm/cputype.h>
 #include <asm/system_misc.h>
+#include <linux/irqchip/arm-gic.h>
 #ifdef CONFIG_VFP
 #include <asm/vfp.h>
 #endif
@@ -45,6 +46,10 @@
 #include "pm-boot.h"
 #include "../../../arch/arm/mach-msm/clock.h"
 
+#ifdef  CONFIG_HUAWEI_KERNEL
+#include <linux/pinctrl/pinctrl.h>
+#include <linux/regulator/consumer.h>
+#endif
 #define SCM_CMD_TERMINATE_PC	(0x2)
 #define SCM_CMD_CORE_HOTPLUGGED (0x10)
 #define SCM_FLUSH_FLAG_MASK	(0x3)
@@ -68,6 +73,10 @@ enum {
 	MSM_PM_DEBUG_IDLE = BIT(6),
 	MSM_PM_DEBUG_IDLE_LIMITS = BIT(7),
 	MSM_PM_DEBUG_HOTPLUG = BIT(8),
+#ifdef CONFIG_HUAWEI_KERNEL
+	MSM_PM_DEBUG_GPIO = BIT(16),
+	MSM_PM_DEBUG_REGULATOR=BIT(17),
+#endif
 };
 
 enum msm_pc_count_offsets {
@@ -190,7 +199,7 @@ static bool msm_pm_pc_hotplug(void)
 		else if (msm_pm_is_L1_writeback())
 			flush_cache_louis();
 	}
-
+	pr_err(" %s: called= %pS  cpu=%d line = %d\n", __func__, __builtin_return_address(0), cpu, __LINE__);
 	msm_pc_inc_debug_count(cpu, MSM_PC_ENTRY_COUNTER);
 
 	if (is_scm_armv8()) {
@@ -372,6 +381,16 @@ static bool msm_pm_power_collapse(bool from_idle)
 	if ((!from_idle && cpu_online(cpu))
 			|| (MSM_PM_DEBUG_IDLE_CLK & msm_pm_debug_mask))
 		clock_debug_print_enabled();
+
+#ifdef  CONFIG_HUAWEI_KERNEL
+	if ((!from_idle && cpu_online(cpu))
+			&& (MSM_PM_DEBUG_GPIO & msm_pm_debug_mask))
+		msm_gpio_print_enabled(); 
+
+	if ((!from_idle && cpu_online(cpu))
+			&& (MSM_PM_DEBUG_REGULATOR & msm_pm_debug_mask))
+		regulator_debug_print_enabled();
+#endif
 
 	avsdscr = avs_get_avsdscr();
 	avscsr = avs_get_avscsr();

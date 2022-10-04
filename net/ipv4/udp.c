@@ -1294,8 +1294,8 @@ csum_copy_err:
 	}
 	unlock_sock_fast(sk, slow);
 
-	if (noblock)
-		return -EAGAIN;
+        /* starting over for a new packet, but check if we need to yield */
+        cond_resched();
 
 	/* starting over for a new packet */
 	msg->msg_flags &= ~MSG_TRUNC;
@@ -1449,8 +1449,9 @@ int udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
 	if (!xfrm4_policy_check(sk, XFRM_POLICY_IN, skb))
 		goto drop;
 	nf_reset(skb);
-
-	if (static_key_false(&udp_encap_needed) && up->encap_type) {
+    /*enable udp encap*/
+	//if (static_key_false(&udp_encap_needed) && up->encap_type) {
+	if (up->encap_type) {
 		int (*encap_rcv)(struct sock *sk, struct sk_buff *skb);
 
 		/*

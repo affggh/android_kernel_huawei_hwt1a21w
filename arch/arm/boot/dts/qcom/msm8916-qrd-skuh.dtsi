@@ -12,7 +12,8 @@
 
 #include "msm8916-qrd.dtsi"
 #include "dsi-panel-innolux-720p-video.dtsi"
-#include "msm8916-camera-sensor-qrd.dtsi"
+
+/*#include "msm8916-camera-sensor-qrd.dtsi"*/
 
 &tlmm_pinmux {
 	akm_reset_pin {
@@ -55,6 +56,23 @@
 			bias-pull-down;
 		};
 	};
+
+	lm3642-en-pin {
+		qcom,pins = <&gp 31>, <&gp 86>;
+		qcom,num-grp-pins = <2>;
+		label = "lm3642_en_pins";
+		qcom,pin-func = <0>;
+
+		lm3642_en_default: en-default {
+			driver-strength = <2>;
+			bias-disable;
+		};
+		lm3642_en_suspend: en-suspend {
+			driver-strength = <2>;
+			bias-pull-down;
+		};
+	};
+
 };
 
 &i2c_0 { /* BLSP1 QUP2 */
@@ -111,8 +129,7 @@
 		st,negate-x;
 		st,negate-y;
 	};
-
-	tps65132@3e {
+	/*tps65132@3e {
 		compatible = "ti,tps65132";
 		reg = <0x3e>;
 		i2c-pwr-supply = <&pm8916_l6>;
@@ -141,6 +158,25 @@
 				ti,en-gpio = <&msm_gpio 32 0>;
 			};
 		};
+	};*/
+	flash_lm3642:qcom,led-flash@63 {
+		reg = <0x63>;
+		cell-index = <0>;
+		qcom,slave-id = <0xC6 0x00 0x0011>;
+		compatible = "ti,lm3642";
+		label = "lm3642";
+		qcom,flash-type = <1>;
+		pinctrl-names = "cam_flash_default","cam_flash_suspend";
+		pinctrl-0 = <&lm3642_en_default>;
+		pinctrl-1 = <&lm3642_en_suspend>;
+		gpios = <&msm_gpio 86 0>,
+			<&msm_gpio 31 0>;
+		qcom,gpio-flash-en = <0>;
+		qcom,gpio-flash-now = <1>;
+		qcom,gpio-req-tbl-num = <0 1>;
+		qcom,gpio-req-tbl-flags = <0 0>;
+		qcom,gpio-req-tbl-label = "FLASH_EN",
+			"FLASH_NOW";
 	};
 
 };
@@ -160,9 +196,8 @@
 	pinctrl-0 = <&mdss_dsi_active>;
 	pinctrl-1 = <&mdss_dsi_suspend>;
 
-	qcom,platform-reset-gpio = <&msm_gpio 25 0>;
-
-	vsp-supply = <&tps65132_pos>;
+	/*qcom,platform-reset-gpio = <&msm_gpio 25 0>;*/
+/*	vsp-supply = <&tps65132_pos>;
 	vsn-supply = <&tps65132_neg>;
 	qcom,panel-supply-entries {
 		#address-cells = <1>;
@@ -185,7 +220,7 @@
 			qcom,supply-enable-load = <40>;
 			qcom,supply-disable-load = <0>;
 		};
-	};
+	};*/
 };
 
 &dsi_innolux_720p_video {
@@ -194,9 +229,7 @@
 };
 
 &soc {
-	spi_0 {
-		status = "disabled";
-	};
+	/*remove spi0 to avoid leds blink blue when device boot*/
 
 	gpio-leds {
 		compatible = "gpio-leds";
@@ -236,6 +269,17 @@
 			qcom,msm-codec-type = "internal";
 			qcom,msm-mbhc-hphl-swh = <1>;
 			qcom,msm-mbhc-gnd-swh = <0>;
+			qcom,msm-hs-micbias-type = "external";
+			qcom,audio-routing =
+				"RX_BIAS", "MCLK",
+				"SPK_RX_BIAS", "MCLK",
+				"INT_LDO_H", "MCLK",
+				"MIC BIAS External", "Handset Mic",
+				"MIC BIAS External2", "Headset Mic",
+				"MIC BIAS External", "Secondary Mic",
+				"AMIC1", "MIC BIAS External",
+				"AMIC2", "MIC BIAS External2",
+				"AMIC3", "MIC BIAS External";
 			pinctrl-names = "cdc_lines_act",
 					"cdc_lines_sus";
 			pinctrl-0 = <&cdc_pdm_lines_act>;
@@ -329,7 +373,7 @@
 &pm8916_chg {
 	qcom,vddmax-mv = <4350>;
 	qcom,vddsafe-mv = <4380>;
-	qcom,vinmin-mv = <4470>;
+	qcom,vinmin-mv = <4389>;
 	qcom,batt-hot-percentage = <35>;
 	qcom,batt-cold-percentage = <70>;
 	qcom,tchg-mins = <360>;
@@ -341,7 +385,7 @@
 		qcom,rpull-up-kohm = <68>;
 		qcom,vref-batt-therm = <1800000>;
 
-		#include "batterydata-qrd-skuh-4v35-2000mah.dtsi"
+		//#include "batterydata-qrd-skuh-4v35-2000mah.dtsi"
 	};
 };
 
@@ -357,8 +401,8 @@
 
 &sdhc_2 {
 	qcom,vdd-always-on;
+	qcom,vdd-io-always-on;
 	qcom,vdd-lpm-sup;
 
 	qcom,vdd-current-level = <4000 400000>;
 };
-

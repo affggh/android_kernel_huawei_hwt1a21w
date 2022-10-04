@@ -150,8 +150,11 @@ static bool migrate_one_irq(struct irq_desc *desc)
 	 * If this is a per-CPU interrupt, or the affinity does not
 	 * include this CPU, then we have nothing to do.
 	 */
-	if (irqd_is_per_cpu(d) || !cpumask_test_cpu(smp_processor_id(), affinity))
+	if (irqd_is_per_cpu(d) || !cpumask_test_cpu(smp_processor_id(), affinity)){
+		if(d->irq == 215)
+			trace_printk("%s Returning without calling GIC affinity for IRQ=0X%x\n", __func__, d->irq );
 		return false;
+	}
 
 	if (cpumask_any_and(affinity, cpu_online_mask) >= nr_cpu_ids)
 		affinity = cpu_online_mask;

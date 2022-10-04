@@ -52,8 +52,8 @@
 #define VFE_CLK_INFO_MAX 16
 #define STATS_COMP_BIT_MASK 0xFF0000
 
-#define MSM_ISP_MIN_AB 100000000
-#define MSM_ISP_MIN_IB 120000000
+#define MSM_ISP_MIN_AB 450000000
+#define MSM_ISP_MIN_IB 900000000
 
 struct vfe_device;
 struct msm_vfe_axi_stream;
@@ -94,9 +94,6 @@ struct msm_vfe_irq_ops {
 	void (*read_irq_status) (struct vfe_device *vfe_dev,
 		uint32_t *irq_status0, uint32_t *irq_status1);
 	void (*process_reg_update) (struct vfe_device *vfe_dev,
-		uint32_t irq_status0, uint32_t irq_status1,
-		struct msm_isp_timestamp *ts);
-	void (*process_epoch_irq)(struct vfe_device *vfe_dev,
 		uint32_t irq_status0, uint32_t irq_status1,
 		struct msm_isp_timestamp *ts);
 	void (*process_reset_irq) (struct vfe_device *vfe_dev,
@@ -163,7 +160,7 @@ struct msm_vfe_axi_ops {
 };
 
 struct msm_vfe_core_ops {
-	void (*reg_update) (struct vfe_device *vfe_dev, uint32_t input_src);
+	void (*reg_update) (struct vfe_device *vfe_dev);
 	long (*reset_hw) (struct vfe_device *vfe_dev, uint32_t first_start,
 		uint32_t blocking_call);
 	int (*init_hw) (struct vfe_device *vfe_dev);

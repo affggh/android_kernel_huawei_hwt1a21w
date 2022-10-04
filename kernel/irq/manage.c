@@ -236,7 +236,7 @@ static void irq_affinity_notify(struct work_struct *work)
 	raw_spin_unlock_irqrestore(&desc->lock, flags);
 
 	notify->notify(notify, cpumask);
-
+	pr_err("%s completed for irq %d \n", __func__, desc->irq_data.irq);
 	free_cpumask_var(cpumask);
 out:
 	kref_put(&notify->kref, notify->release);
@@ -361,8 +361,11 @@ void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
 		desc->istate |= IRQS_SUSPENDED;
 	}
 
-	if (!desc->depth++)
+	if (!desc->depth++){
+		if(irq == 215)
+			pr_err("IRQ=%d %pS \n", desc->irq_data.irq, __builtin_return_address(0));
 		irq_disable(desc);
+	}
 }
 
 static int __disable_irq_nosync(unsigned int irq)
@@ -437,6 +440,8 @@ void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume)
 			goto err_out;
 		/* Prevent probing on this irq: */
 		irq_settings_set_noprobe(desc);
+		if(irq == 215)
+			pr_err("IRQ=%d %pS \n", desc->irq_data.irq, __builtin_return_address(0));
 		irq_enable(desc);
 		check_irq_resend(desc, irq);
 		/* fall-through */
@@ -524,6 +529,8 @@ int irq_set_irq_wake(unsigned int irq, unsigned int on)
 		if (desc->wake_depth == 0) {
 			WARN(1, "Unbalanced IRQ %d wake disable\n", irq);
 		} else if (--desc->wake_depth == 0) {
+			if(irq == 215)
+				pr_err("IRQ=%d %pS \n", desc->irq_data.irq, __builtin_return_address(0));
 			ret = set_irq_wake_real(irq, on);
 			if (ret)
 				desc->wake_depth = 1;
@@ -1371,6 +1378,8 @@ void free_irq(unsigned int irq, void *dev_id)
 	if (WARN_ON(desc->affinity_notify))
 		desc->affinity_notify = NULL;
 #endif
+	if(irq == 215)
+		pr_err("IRQ=%d %pS \n", desc->irq_data.irq, __builtin_return_address(0));
 
 	chip_bus_lock(desc);
 	kfree(__free_irq(irq, dev_id));
@@ -1461,6 +1470,8 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
 	action->name = devname;
 	action->dev_id = dev_id;
 
+	if(irq == 215)
+		pr_err("IRQ=%d %pS \n", desc->irq_data.irq, __builtin_return_address(0));
 	chip_bus_lock(desc);
 	retval = __setup_irq(irq, desc, action);
 	chip_bus_sync_unlock(desc);

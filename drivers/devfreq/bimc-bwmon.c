@@ -225,7 +225,7 @@ static int start_bw_hwmon(struct bw_hwmon *hw, unsigned long mbps)
 	struct bwmon *m = to_bwmon(hw);
 	u32 limit;
 	int ret;
-
+	pr_err(" %s: call request_threaded_irq bimc-bwmon IRQ \n", __func__);
 	ret = request_threaded_irq(m->irq, NULL, bwmon_intr_handler,
 				  IRQF_ONESHOT | IRQF_SHARED,
 				  dev_name(m->dev), m);
@@ -251,7 +251,7 @@ static int start_bw_hwmon(struct bw_hwmon *hw, unsigned long mbps)
 static void stop_bw_hwmon(struct bw_hwmon *hw)
 {
 	struct bwmon *m = to_bwmon(hw);
-
+	pr_err(" %s: going to free bimc-bwmon IRQ \n", __func__);
 	free_irq(m->irq, m);
 	mon_disable(m);
 	mon_irq_disable(m);
@@ -262,7 +262,7 @@ static void stop_bw_hwmon(struct bw_hwmon *hw)
 static int suspend_bw_hwmon(struct bw_hwmon *hw)
 {
 	struct bwmon *m = to_bwmon(hw);
-
+	pr_err(" %s: going to free bimc-bwmon IRQ \n", __func__);
 	free_irq(m->irq, m);
 	mon_disable(m);
 	mon_irq_disable(m);
@@ -275,7 +275,7 @@ static int resume_bw_hwmon(struct bw_hwmon *hw)
 {
 	struct bwmon *m = to_bwmon(hw);
 	int ret;
-
+	pr_err(" %s: going to call request_threaded_irq bimc-bwmon IRQ \n", __func__);
 	mon_clear(m);
 	mon_irq_enable(m);
 	mon_enable(m);

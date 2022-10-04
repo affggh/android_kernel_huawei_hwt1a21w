@@ -24,6 +24,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/smp.h>
+#include <linux/irqchip/arm-gic.h>
 
 #include <soc/qcom/cpu_pwr_ctl.h>
 #include <soc/qcom/scm-boot.h>
@@ -190,11 +191,14 @@ static void msm_wfi_cpu_die(unsigned int cpu)
 		BUG();
 	}
 	for (;;) {
+		pr_err(" %s: called= %pS  secondary_holding_pen_release=%lu line = %d\n", __func__, __builtin_return_address(0), secondary_holding_pen_release, __LINE__);
 		lpm_cpu_hotplug_enter(cpu);
 		if (secondary_holding_pen_release == cpu_logical_map(cpu)) {
 			/*Proper wake up */
 			break;
 		}
+		gic_show_pending_irq();
+		gic_show_target_irq();
 		pr_debug("CPU%u: spurious wakeup call\n", cpu);
 		BUG();
 	}

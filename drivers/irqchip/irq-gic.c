@@ -267,6 +267,19 @@ void gic_show_pending_irq(void)
 	}
 }
 
+void gic_show_target_irq(void)
+{
+	void __iomem *dist_base;
+	unsigned int i, j;
+
+	raw_spin_lock(&irq_controller_lock);
+	for (j = 0; j < MAX_GIC_NR; j++) {
+		dist_base = gic_data_dist_base(&gic_data[j]);
+		for (i = 0; i < DIV_ROUND_UP( gic_data[j].gic_irqs, 4); i++)
+			pr_err("%s: GIC_DIST_TARGET[%d]=0X%x \n", __func__, i, readl_relaxed_no_log(dist_base + GIC_DIST_TARGET + i * 4));
+	}
+	raw_spin_unlock(&irq_controller_lock);
+}
 static void gic_show_resume_irq(struct gic_chip_data *gic)
 {
 	unsigned int i;
@@ -423,11 +436,14 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
 
 	mask = 0xff << shift;
 	bit = gic_cpu_map[cpu] << shift;
+	WARN_ON(!cpu_online(cpu));
 
 	raw_spin_lock(&irq_controller_lock);
 	val = readl_relaxed_no_log(reg) & ~mask;
 	writel_relaxed_no_log(val | bit, reg);
 	raw_spin_unlock(&irq_controller_lock);
+	if(gic_irq(d) == 215)
+		pr_err("%s: IRQ=0X%x read=0X%x writting=0X%x <==%pS \n",__func__, gic_irq(d), val, val|bit, __builtin_return_address(0));
 
 	return IRQ_SET_MASK_OK;
 }

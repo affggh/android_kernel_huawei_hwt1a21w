@@ -72,7 +72,7 @@
 			linux,input-type = <1>;
 			linux,code = <115>;
 			gpio-key,wakeup;
-			debounce-interval = <15>;
+			debounce-interval = <20>;
 		};
 	};
 };
@@ -105,7 +105,8 @@
 
 &sdhc_1 {
 	vdd-supply = <&pm8916_l8>;
-	qcom,vdd-voltage-level = <2900000 2900000>;
+	qcom,vdd-always-on;
+	qcom,vdd-voltage-level = <2950000 2950000>;
 	qcom,vdd-current-level = <200 400000>;
 
 	vdd-io-supply = <&pm8916_l5>;
@@ -129,8 +130,10 @@
 	qcom,vdd-current-level = <15000 400000>;
 
 	vdd-io-supply = <&pm8916_l12>;
-	qcom,vdd-io-voltage-level = <1800000 2950000>;
+	/* change from <1800000 2950000> to <2950000 2950000>*/
+	qcom,vdd-io-voltage-level = <2950000 2950000>;
 	qcom,vdd-io-current-level = <200 50000>;
+	qcom,vdd-io-always-on;
 
 	pinctrl-names = "active", "sleep";
 	pinctrl-0 = <&sdc2_clk_on &sdc2_cmd_on &sdc2_data_on &sdc2_cd_on>;
@@ -141,11 +144,7 @@
 	interrupts = <0 1 2>;
 	#interrupt-cells = <1>;
 	interrupt-map-mask = <0xffffffff>;
-	interrupt-map = <0 &intc 0 125 0
-			1 &intc 0 221 0
-			2 &msm_gpio 38 0>;
 	interrupt-names = "hc_irq", "pwr_irq", "status_irq";
-	cd-gpios = <&msm_gpio 38 0x0>;
 
 	status = "ok";
 };

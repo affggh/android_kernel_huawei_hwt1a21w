@@ -559,7 +559,8 @@ int msm_camera_get_dt_power_setting_data(struct device_node *of_node,
 		CDBG("%s power_setting[%d].delay = %d\n", __func__,
 			i, ps[i].delay);
 	}
-	kfree(array);
+	// move free array memory after get power down setting
+	//kfree(array);
 
 	size = *power_setting_size;
 
@@ -572,7 +573,7 @@ int msm_camera_get_dt_power_setting_data(struct device_node *of_node,
 	if (!power_info->power_down_setting) {
 		pr_err("%s failed %d\n", __func__, __LINE__);
 		rc = -ENOMEM;
-		goto ERROR1;
+		goto ERROR2;
 	}
 
 	memcpy(power_info->power_down_setting,
@@ -580,6 +581,28 @@ int msm_camera_get_dt_power_setting_data(struct device_node *of_node,
 
 	power_info->power_down_setting_size = size;
 
+    //get dtsi power down setting
+	rc = of_property_read_u32_array(of_node, "qcom,cam-power-down-seq-cfg-val",
+		array, count);
+	if (rc < 0) {
+		rc = 0; //if get power down seq error, return normal,Compatibility with other projects
+		pr_err("%s failed %d\n", __func__, __LINE__);
+	}
+	else{
+		for (i = 0; i < count; i++) {
+			if (power_info->power_down_setting[i].seq_type == SENSOR_GPIO) {
+				if (array[i] == 0)
+					power_info->power_down_setting[i].config_val = GPIO_OUT_LOW;
+				else if (array[i] == 1)
+					power_info->power_down_setting[i].config_val = GPIO_OUT_HIGH;
+			} else {
+				power_info->power_down_setting[i].config_val = array[i];
+			}
+			CDBG("%s power_down_setting[%d].config_val = %ld\n", __func__, i,
+				power_info->power_down_setting[i].config_val);
+		}
+	}
+	kfree(array);
 	if (need_reverse) {
 		int c, end = size - 1;
 		struct msm_sensor_power_setting power_down_setting_t;
@@ -930,6 +953,26 @@ int msm_camera_init_gpio_pin_tbl(struct device_node *of_node,
 		rc = 0;
 	}
 
+	rc = of_property_read_u32(of_node, "qcom,gpio-cam-id", &val);
+	if (rc != -EINVAL) {
+		if (rc < 0) {
+			pr_err("%s:%dread qcom,gpio-cam-id failed rc %d\n",
+				__func__, __LINE__, rc);
+			goto ERROR;
+		} else if (val >= gpio_array_size) {
+			pr_err("%s:%d qcom,gpio-cam-id invalid %d\n",
+				__func__, __LINE__, val);
+			rc = -EINVAL;
+			goto ERROR;
+		}
+		gconf->gpio_num_info->gpio_num[SENSOR_GPIO_CAM_ID] =
+			gpio_array[val];
+		gconf->gpio_num_info->valid[SENSOR_GPIO_CAM_ID] = 1;
+		CDBG("%s qcom,gpio-cam-id %d index =%d \n", __func__,
+			gconf->gpio_num_info->gpio_num[SENSOR_GPIO_CAM_ID], val);
+	} else
+		rc = 0;
+
 	rc = of_property_read_u32(of_node, "qcom,gpio-flash-en", &val);
 	if (rc != -EINVAL) {
 		if (rc < 0) {
@@ -991,50 +1034,8 @@ int msm_camera_init_gpio_pin_tbl(struct device_node *of_node,
 			gconf->gpio_num_info->gpio_num[SENSOR_GPIO_FL_RESET]);
 	} else
 		rc = 0;
-
-	rc = of_property_read_u32(of_node, "qcom,gpio-custom1", &val);
-	if (rc != -EINVAL) {
-		if (rc < 0) {
-			pr_err("%s:%d read qcom,gpio-custom1 failed rc %d\n",
-				__func__, __LINE__, rc);
-			goto ERROR;
-		} else if (val >= gpio_array_size) {
-			pr_err("%s:%d qcom,gpio-custom1 invalid %d\n",
-				__func__, __LINE__, val);
-			rc = -EINVAL;
-			goto ERROR;
-		}
-		gconf->gpio_num_info->gpio_num[SENSOR_GPIO_CUSTOM1] =
-			gpio_array[val];
-		gconf->gpio_num_info->valid[SENSOR_GPIO_CUSTOM1] = 1;
-		CDBG("%s qcom,gpio-custom1 %d\n", __func__,
-			gconf->gpio_num_info->gpio_num[SENSOR_GPIO_CUSTOM1]);
-	} else {
-		rc = 0;
-	}
-
-	rc = of_property_read_u32(of_node, "qcom,gpio-custom2", &val);
-	if (rc != -EINVAL) {
-		if (rc < 0) {
-			pr_err("%s:%d read qcom,gpio-custom2 failed rc %d\n",
-				__func__, __LINE__, rc);
-			goto ERROR;
-		} else if (val >= gpio_array_size) {
-			pr_err("%s:%d qcom,gpio-custom2 invalid %d\n",
-				__func__, __LINE__, val);
-			rc = -EINVAL;
-			goto ERROR;
-		}
-		gconf->gpio_num_info->gpio_num[SENSOR_GPIO_CUSTOM2] =
-			gpio_array[val];
-		gconf->gpio_num_info->valid[SENSOR_GPIO_CUSTOM2] = 1;
-		CDBG("%s qcom,gpio-custom2 %d\n", __func__,
-			gconf->gpio_num_info->gpio_num[SENSOR_GPIO_CUSTOM2]);
-	} else {
-		rc = 0;
-	}
-
-	return rc;
+	//if "qcom,gpio-af-pwdm" not defined ,the function return 0 successfully
+	return 0;
 
 ERROR:
 	kfree(gconf->gpio_num_info);
@@ -1049,7 +1050,7 @@ int msm_camera_get_dt_vreg_data(struct device_node *of_node,
 	uint32_t count = 0;
 	uint32_t *vreg_array = NULL;
 	struct camera_vreg_t *vreg = NULL;
-	bool custom_vreg_name =  false;
+	//bool custom_vreg_name =  false;
 
 	count = of_property_count_strings(of_node, "qcom,cam-vreg-name");
 	CDBG("%s qcom,cam-vreg-name count %d\n", __func__, count);
@@ -1073,22 +1074,6 @@ int msm_camera_get_dt_vreg_data(struct device_node *of_node,
 		if (rc < 0) {
 			pr_err("%s failed %d\n", __func__, __LINE__);
 			goto ERROR1;
-		}
-	}
-
-	custom_vreg_name = of_property_read_bool(of_node,
-		"qcom,cam-custom-vreg-name");
-	if (custom_vreg_name) {
-		for (i = 0; i < count; i++) {
-			rc = of_property_read_string_index(of_node,
-				"qcom,cam-custom-vreg-name", i,
-				&vreg[i].custom_vreg_name);
-			CDBG("%s sub reg_name[%d] = %s\n", __func__, i,
-				vreg[i].custom_vreg_name);
-			if (rc < 0) {
-				pr_err("%s failed %d\n", __func__, __LINE__);
-				goto ERROR1;
-			}
 		}
 	}
 

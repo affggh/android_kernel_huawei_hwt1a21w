@@ -331,7 +331,7 @@ static void *bam_ipc_log_txt;
  * D: 1 = Disconnect ACK active
  */
 
-#define BAM_DMUX_LOG(fmt, args...) \
+#define BAM_DMUX_LOG_XXX(fmt, args...) \
 do { \
 	if (bam_ipc_log_txt) { \
 		ipc_log_string(bam_ipc_log_txt, \
@@ -349,9 +349,15 @@ do { \
 	} \
 } while (0)
 
+#define BAM_DMUX_LOG(fmt, args...) \
+do { \
+	BAM_DMUX_LOG_XXX(fmt, args); \
+	pr_err(fmt, args); \
+} while (0)
+
 #define DMUX_LOG_KERR(fmt, args...) \
 do { \
-	BAM_DMUX_LOG(fmt, args); \
+	BAM_DMUX_LOG_XXX(fmt, args); \
 	pr_err(fmt, args); \
 } while (0)
 
@@ -2277,7 +2283,7 @@ static int bam_init(void)
 	a2_props.virt_addr = a2_virt_addr;
 	a2_props.virt_size = a2_phys_size;
 	a2_props.irq = a2_bam_irq;
-	a2_props.options = SPS_BAM_OPT_IRQ_WAKEUP | SPS_BAM_HOLD_MEM;
+	a2_props.options = SPS_BAM_OPT_IRQ_WAKEUP;
 	a2_props.num_pipes = A2_NUM_PIPES;
 	a2_props.summing_threshold = A2_SUMMING_THRESHOLD;
 	a2_props.constrained_logging = true;

@@ -329,6 +329,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
 		goto out_release;
 	}
 	smpboot_park_threads(cpu);
+	pr_err(" %s: called= %pS  cpu=%d line = %d\n", __func__, __builtin_return_address(0), cpu, __LINE__);
 
 	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
 	if (err) {
@@ -348,9 +349,10 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
 	 */
 	while (!idle_cpu(cpu))
 		cpu_relax();
-
+	pr_err(" %s: called= %pS  cpu=%d line = %d\n", __func__, __builtin_return_address(0), cpu, __LINE__);
 	/* This actually kills the CPU. */
 	__cpu_die(cpu);
+	pr_err(" %s: called= %pS  cpu=%d line = %d\n", __func__, __builtin_return_address(0), cpu, __LINE__);
 
 	/* CPU is completely dead: tell everyone.  Too late to complain. */
 	cpu_notify_nofail(CPU_DEAD | mod, hcpu);

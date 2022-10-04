@@ -35,7 +35,8 @@
 #include "mdss_fb.h"
 #include "mdss_mdp.h"
 #include "mdss_mdp_rotator.h"
-
+/* add log on panel resume and suspend module */
+#include <linux/hw_lcd_common.h>
 #define VSYNC_PERIOD 16
 #define BORDERFILL_NDX	0x0BF000BF
 #define CHECK_BOUNDS(offset, size, max_size) \
@@ -1686,6 +1687,8 @@ done:
  *
  * Release any resources allocated by calling process, this can be called
  * on fb_release to release any overlays/rotator sessions left open.
+ *
+ * Return number of resources released
  */
 static int __mdss_mdp_overlay_release_all(struct msm_fb_data_type *mfd,
 	bool release_all, uint32_t pid)
@@ -1724,7 +1727,12 @@ static int __mdss_mdp_overlay_release_all(struct msm_fb_data_type *mfd,
 	}
 	mutex_unlock(&mdp5_data->ov_lock);
 
+/*  */
+#ifdef CONFIG_HUAWEI_LCD
+	if (cnt && mfd->panel_power_state == MDSS_PANEL_POWER_ON)
+#else
 	if (cnt)
+#endif
 		mfd->mdp.kickoff_fnc(mfd, NULL);
 
 	list_for_each_entry_safe(rot, tmp, &mdp5_data->rot_proc_list, list) {
@@ -3190,16 +3198,20 @@ static int __mdss_overlay_src_split_sort(struct msm_fb_data_type *mfd,
 		__overlay_swap_func);
 
 	for (i = 0; i < num_ovs; i++) {
+		if (ovs[i].z_order >= MDSS_MDP_MAX_STAGE) {
+			pr_err("invalid stage:%u\n", ovs[i].z_order);
+			return -EINVAL;
+		}
 		if (ovs[i].dst_rect.x < left_lm_w) {
 			if (left_lm_zo_cnt[ovs[i].z_order] == 2) {
-				pr_err("more than 2 ov @ stage%d on left lm\n",
+				pr_err("more than 2 ov @ stage%u on left lm\n",
 					ovs[i].z_order);
 				return -EINVAL;
 			}
 			left_lm_zo_cnt[ovs[i].z_order]++;
 		} else {
 			if (right_lm_zo_cnt[ovs[i].z_order] == 2) {
-				pr_err("more than 2 ov @ stage%d on right lm\n",
+				pr_err("more than 2 ov @ stage%u on right lm\n",
 					ovs[i].z_order);
 				return -EINVAL;
 			}
@@ -3614,7 +3626,10 @@ static int mdss_mdp_overlay_on(struct msm_fb_data_type *mfd)
 	int rc;
 	struct mdss_overlay_private *mdp5_data;
 	struct mdss_mdp_ctl *ctl = NULL;
-
+/* add log on panel resume and suspend module */
+#ifdef CONFIG_HUAWEI_LCD
+	LCD_LOG_INFO("start %s\n",__func__);
+#endif
 	if (!mfd)
 		return -ENODEV;
 
@@ -3769,7 +3784,10 @@ ctl_stop:
 		}
 	}
 	mutex_unlock(&mdp5_data->ov_lock);
-
+/* add log on panel resume and suspend module */
+#ifdef CONFIG_HUAWEI_LCD
+	LCD_LOG_INFO("exit %s\n",__func__);
+#endif
 	/* Release the last reference to the runtime device */
 	rc = pm_runtime_put(&mfd->pdev->dev);
 	if (rc)

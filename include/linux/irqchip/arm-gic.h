@@ -81,5 +81,6 @@ static inline void gic_init(unsigned int nr, int start,
 }
 
 void gic_show_pending_irq(void);
+void gic_show_target_irq(void);
 #endif /* __ASSEMBLY */
 #endif
